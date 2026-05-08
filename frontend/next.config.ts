@@ -5,13 +5,20 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:5001/api/:path*',
+        destination: process.env.NEXT_PUBLIC_API_URL 
+          ? `${process.env.NEXT_PUBLIC_API_URL}/api/:path*`
+          : 'http://localhost:5001/api/:path*',
       },
       {
         source: '/uploads/:path*',
-        destination: 'http://localhost:5001/uploads/:path*',
+        destination: process.env.NEXT_PUBLIC_API_URL
+          ? `${process.env.NEXT_PUBLIC_API_URL}/uploads/:path*`
+          : 'http://localhost:5001/uploads/:path*',
       },
     ];
+  },
+  images: {
+    domains: ['localhost', 'zenzap-backend.onrender.com'],
   },
 };
 
