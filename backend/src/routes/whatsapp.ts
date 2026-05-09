@@ -4,8 +4,7 @@ import axios from 'axios';
 const router = express.Router();
 
 // Store user tokens (in-memory for now)
-const userTokens: Record<string, { token: string; expiresAt: number }> = 
-{};
+const userTokens: Record<string, { token: string; expiresAt: number }> = {};
 
 // Generate WhatsApp QR code using Meta Graph API
 router.get('/qr', async (req, res) => {
@@ -21,8 +20,7 @@ router.get('/qr', async (req, res) => {
     res.json({ 
       configId: process.env.META_CONFIG_ID,
       appId: process.env.META_APP_ID,
-      redirectUri: `${process.env.APP_URL || 
-'https://zenzap-omega.vercel.app'}/api/whatsapp/callback`
+      redirectUri: `${process.env.APP_URL || 'https://zenzap-omega.vercel.app'}/api/whatsapp/callback`
     });
   } catch (error) {
     console.error('QR generation error:', error);
@@ -40,13 +38,11 @@ router.post('/exchange-token', async (req, res) => {
 
   try {
     // Exchange code for access token
-    const response = await 
-axios.get('https://graph.facebook.com/v22.0/oauth/access_token', {
+    const response = await axios.get('https://graph.facebook.com/v22.0/oauth/access_token', {
       params: {
         client_id: process.env.META_APP_ID,
         client_secret: process.env.META_APP_SECRET,
-        redirect_uri: `${process.env.APP_URL || 
-'https://zenzap-omega.vercel.app'}/api/whatsapp/callback`,
+        redirect_uri: `${process.env.APP_URL || 'https://zenzap-omega.vercel.app'}/api/whatsapp/callback`,
         code: code
       }
     });
@@ -64,8 +60,7 @@ axios.get('https://graph.facebook.com/v22.0/oauth/access_token', {
     console.log('✅ Token exchanged successfully');
     res.json({ success: true, expiresIn: expires_in });
   } catch (error: any) {
-    console.error('Token exchange error:', error.response?.data || 
-error.message);
+    console.error('Token exchange error:', error.response?.data || error.message);
     res.status(500).json({ 
       error: 'Failed to exchange token',
       details: error.response?.data?.error?.message || 'Unknown error'
@@ -77,8 +72,7 @@ error.message);
 router.get('/callback', async (req, res) => {
   const { code, error, error_description } = req.query;
   
-  const redirectUri = `${process.env.APP_URL || 
-'https://zenzap-omega.vercel.app'}/dashboard/whatsapp-connection`;
+  const redirectUri = `${process.env.APP_URL || 'https://zenzap-omega.vercel.app'}/dashboard/whatsapp-connection`;
   
   if (error) {
     console.error('OAuth error:', error, error_description);
@@ -87,8 +81,7 @@ router.get('/callback', async (req, res) => {
   }
   
   if (code) {
-    // Store the code temporarily (will be exchanged on frontend)
-    sessions.set(code as string, { createdAt: Date.now() });
+    // Redirect to frontend with the code
     res.redirect(`${redirectUri}?code=${code}`);
   } else {
     res.redirect(`${redirectUri}?error=no_code`);
