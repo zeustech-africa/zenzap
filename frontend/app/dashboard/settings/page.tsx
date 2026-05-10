@@ -89,16 +89,6 @@ export default function SettingsPage() {
                 className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
               />
             </div>
-            <Link
-              href="/dashboard/whatsapp-connection"
-              className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition mt-4"
-            >
-              <div>
-                <div className="text-white font-medium">📱 Connect WhatsApp</div>
-                <div className="text-gray-400 text-sm">Link your WhatsApp Business account</div>
-              </div>
-              <span className="text-orange-400">→</span>
-            </Link>
             <div className="flex items-center justify-between pt-4">
               <div>
                 <div className="text-white font-medium">Push Notifications</div>

@@ -180,9 +180,29 @@ export default function Dashboard() {
                   🤖 Auto-Replies
                 </Link>
               </HoverTooltip>
-              <HoverTooltip text="Choose from pre-built message templates for your industry">
+              <HoverTooltip text="Use both WhatsApp Business App and ZENZAP at the same time">
+                <Link href="/dashboard/coexistence" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  🔄 Coexistence Mode
+                </Link>
+              </HoverTooltip>
+              <HoverTooltip text="Get the official WhatsApp Green Tick verified badge for your business">
+                <Link href="/dashboard/green-tick" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  ✅ Green Tick Verification
+                </Link>
+              </HoverTooltip>
+              <HoverTooltip text="Learn how to use ZENZAP with step-by-step guides and FAQs">
+                <Link href="/dashboard/guide" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  📚 User Guide & Tutorials
+                </Link>
+              </HoverTooltip>
+              <HoverTooltip text="View your WhatsApp voice and video call history">
+                <Link href="/dashboard/calls" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  📞 Call History
+                </Link>
+              </HoverTooltip>
+              <HoverTooltip text="Create and manage message templates with dynamic variables">
                 <Link href="/dashboard/templates" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
-                  🎨 Industry Templates
+                  📝 Message Templates
                 </Link>
               </HoverTooltip>
               <HoverTooltip text="Manage customer appointments and send reminders">
@@ -200,14 +220,79 @@ export default function Dashboard() {
                   👥 Customer CRM
                 </Link>
               </HoverTooltip>
+              <HoverTooltip text="Connect HubSpot or Salesforce to sync WhatsApp contacts automatically">
+                <Link href="/dashboard/crm" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  🔄 CRM Integration
+                </Link>
+              </HoverTooltip>
+              <HoverTooltip text="Create click-to-WhatsApp links for Facebook and Instagram ads">
+                <Link href="/dashboard/ads" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  📢 Click-to-WhatsApp Ads
+                </Link>
+              </HoverTooltip>
+              <HoverTooltip text="Receive and reply to Instagram DMs from your dashboard">
+                <Link href="/dashboard/instagram" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  📸 Instagram DMs
+                </Link>
+              </HoverTooltip>
               <HoverTooltip text="Manage your plan, billing, and payment methods">
                 <Link href="/dashboard/subscription" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
                   💳 Subscription & Billing
                 </Link>
               </HoverTooltip>
+              <HoverTooltip text="Generate payment links to send to customers via WhatsApp">
+                <Link href="/dashboard/payments" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  💳 Payment Links
+                </Link>
+              </HoverTooltip>
               <HoverTooltip text="View detailed analytics and performance metrics">
                 <Link href="/dashboard/analytics" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
-                  📊 Analytics Dashboard
+                  � Analytics Dashboard
+                </Link>
+              </HoverTooltip>
+              <HoverTooltip text="Track team performance, response times, and customer satisfaction scores">
+                <Link href="/dashboard/agents" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  👥 Agent Performance
+                </Link>
+              </HoverTooltip>
+              <HoverTooltip text="Check your WhatsApp Business quality rating and message limits">
+                <Link href="/dashboard/quality" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  � Quality Rating
+                </Link>
+              </HoverTooltip>
+              <HoverTooltip text="AI understands what your customers want - booking, pricing, support and more">
+                <Link href="/dashboard/nlu" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  🧠 AI Understanding
+                </Link>
+              </HoverTooltip>
+              <HoverTooltip text="Display your product catalog within WhatsApp and upload products via CSV">
+                <Link href="/dashboard/catalog" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                   Product Catalog
+                </Link>
+              </HoverTooltip>
+              <HoverTooltip text="Recover abandoned carts with automated WhatsApp reminders and discount codes">
+                <Link href="/dashboard/cart-recovery" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  🛒 Cart Recovery
+                </Link>
+              </HoverTooltip>
+              <HoverTooltip text="Connect your Shopify store to sync products and orders with WhatsApp">
+                <Link href="/dashboard/shopify" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  🛍️ Shopify Integration
+                </Link>
+              </HoverTooltip>
+              <HoverTooltip text="Connect to Zapier and external CRMs with webhooks">
+                <Link href="/dashboard/webhooks" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  🔄 CRM Integration (Zapier)
+                </Link>
+              </HoverTooltip>
+              <HoverTooltip text="Manage marketing consent, opt-ins, and compliance audit logs">
+                <Link href="/dashboard/opt-in" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  📋 Opt-in Management
+                </Link>
+              </HoverTooltip>
+              <HoverTooltip text="Create interactive WhatsApp forms for surveys, registrations, and feedback">
+                <Link href="/dashboard/flow-forms" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  📋 WhatsApp Flows
                 </Link>
               </HoverTooltip>
               <HoverTooltip text="Configure your account, notifications, and preferences">

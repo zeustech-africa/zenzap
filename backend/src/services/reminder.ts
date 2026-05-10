@@ -1,5 +1,4 @@
 import { appointments } from '../models/Appointment';
-import { whatsappService } from './whatsapp';
 
 class ReminderService {
   private interval: NodeJS.Timeout | null = null;
@@ -39,13 +38,9 @@ class ReminderService {
     const message = `🔔 REMINDER: You have an appointment tomorrow at ${appointment.time} for ${appointment.service}. ` +
                     `Reply 'CONFIRM' to confirm, or 'RESCHEDULE' to change.`;
     
-    try {
-      await whatsappService.sendTextMessage(appointment.customerPhone, message);
-      appointment.reminderSent = true;
-      console.log(`Reminder sent to ${appointment.customerPhone}`);
-    } catch (error) {
-      console.error(`Failed to send reminder to ${appointment.customerPhone}:`, error);
-    }
+    // Placeholder: WhatsApp messaging will be reimplemented
+    console.log(`[REMINDER] Would send to ${appointment.customerPhone}: ${message}`);
+    appointment.reminderSent = true;
   }
 }
 

@@ -28,7 +28,39 @@ export default function InboxPage() {
   const [newMessageText, setNewMessageText] = useState('');
   const [sending, setSending] = useState(false);
   const [conversationsList, setConversationsList] = useState<Conversation[]>([]);
-  
+  const [initiatingCall, setInitiatingCall] = useState(false);
+
+  // Initiate WhatsApp call
+  const initiateCall = async (phoneNumber: string, customerName: string, type: 'voice' | 'video') => {
+    setInitiatingCall(true);
+    try {
+      const userId = localStorage.getItem('userId');
+      const response = await fetch('/api/calls/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          customerPhone: phoneNumber,
+          customerName,
+          type
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        window.open(data.callLink, '_blank');
+        alert(`Click "Allow" to start the ${type} call on WhatsApp.`);
+      } else {
+        alert('Failed to initiate call');
+      }
+    } catch (error) {
+      alert('Error initiating call');
+    } finally {
+      setInitiatingCall(false);
+    }
+  };
+
   // Fetch conversations from API
   const fetchConversations = async () => {
     try {
@@ -233,6 +265,26 @@ export default function InboxPage() {
                 <div className="p-4 border-b border-white/20">
                   <div className="text-white font-bold">{selectedConv.customerName}</div>
                   <div className="text-gray-400 text-sm">{selectedConv.customerNumber}</div>
+                  {selectedConversation && (
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={() => initiateCall(selectedConv.customerNumber, selectedConv.customerName, 'voice')}
+                        disabled={initiatingCall}
+                        className="bg-green-500/20 hover:bg-green-500/30 text-green-400 px-3 py-1 rounded-lg text-sm transition"
+                        title="Voice Call"
+                      >
+                        📞 Voice
+                      </button>
+                      <button
+                        onClick={() => initiateCall(selectedConv.customerNumber, selectedConv.customerName, 'video')}
+                        disabled={initiatingCall}
+                        className="bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 px-3 py-1 rounded-lg text-sm transition"
+                        title="Video Call"
+                      >
+                        📹 Video
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Messages Area */}

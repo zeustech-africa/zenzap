@@ -1,6 +1,8 @@
 import express from 'express';
 import { payfastService } from '../services/payfast';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
+import { paymentLinks, paymentTransactions as paymentLinkTransactions, PaymentLink } from '../models/Payment';
 
 const router = express.Router();
 
@@ -118,6 +120,124 @@ router.get('/history/:businessId', (req, res) => {
   const { businessId } = req.params;
   const history = paymentTransactions.filter(t => t.businessId === businessId);
   res.json(history);
+});
+
+// ============================================================
+// PAYMENT LINK ROUTES (In-Chat Payment Links)
+// ============================================================
+
+// Generate payment link (copies SleekFlow's logic)
+router.post('/payments/create-link', async (req, res) => {
+  const { userId, customerName, customerEmail, customerPhone, amount, description } = req.body;
+  
+  if (!amount || amount <= 0) {
+    return res.status(400).json({ error: 'Valid amount is required' });
+  }
+  
+  // Generate unique ID
+  const paymentId = uuidv4();
+  const expireHours = 48; // Links expire in 48 hours
+  
+  // Create PayFast payment URL (simplified)
+  const payfastMerchantId = process.env.PAYFAST_MERCHANT_ID || '10000100';
+  const payfastMerchantKey = process.env.PAYFAST_MERCHANT_KEY || '46f0cd694581a';
+  const isTest = process.env.PAYFAST_TEST_MODE !== 'false';
+  
+  const returnUrl = `${process.env.APP_URL}/dashboard/payments/success?payment_id=${paymentId}`;
+  const cancelUrl = `${process.env.APP_URL}/dashboard/payments/cancel?payment_id=${paymentId}`;
+  const notifyUrl = `${process.env.APP_URL}/api/payments/webhook`;
+  
+  // Generate signature
+  const dataString = `merchant_id=${payfastMerchantId}&merchant_key=${payfastMerchantKey}&return_url=${returnUrl}&cancel_url=${cancelUrl}&notify_url=${notifyUrl}&amount=${amount}&item_name=${encodeURIComponent(description)}&m_payment_id=${paymentId}`;
+  const signature = crypto.createHash('md5').update(dataString).digest('hex');
+  
+  const payfastUrl = isTest 
+    ? `https://sandbox.payfast.co.za/eng/process?${dataString}&signature=${signature}`
+    : `https://www.payfast.co.za/eng/process?${dataString}&signature=${signature}`;
+  
+  // Store payment link
+  const newPaymentLink: PaymentLink = {
+    id: paymentId,
+    userId,
+    customerName,
+    customerEmail,
+    customerPhone,
+    amount,
+    currency: 'ZAR',
+    description,
+    status: 'pending',
+    paymentUrl: payfastUrl,
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + expireHours * 60 * 60 * 1000).toISOString()
+  };
+  
+  paymentLinks.push(newPaymentLink);
+  
+  // Generate short link for WhatsApp (simplified)
+  const shortLink = `${process.env.APP_URL}/pay/${paymentId}`;
+  
+  res.json({
+    paymentId,
+    paymentUrl: payfastUrl,
+    shortLink,
+    amount,
+    description,
+    expiresAt: newPaymentLink.expiresAt,
+    message: `🔗 Payment link created! Send this link to your customer via WhatsApp.`
+  });
+});
+
+// Get payment links for user
+router.get('/payments/links', (req, res) => {
+  const userId = req.query.userId as string;
+  const links = paymentLinks.filter(l => l.userId === userId);
+  res.json(links);
+});
+
+// Get single payment link
+router.get('/payments/links/:id', (req, res) => {
+  const link = paymentLinks.find(l => l.id === req.params.id);
+  if (!link) {
+    return res.status(404).json({ error: 'Payment link not found' });
+  }
+  res.json(link);
+});
+
+// Update payment status (called from webhook)
+router.post('/payments/webhook', (req, res) => {
+  const pfData = req.body;
+  const paymentId = pfData.m_payment_id;
+  
+  const link = paymentLinks.find(l => l.id === paymentId);
+  if (link && pfData.payment_status === 'COMPLETE') {
+    link.status = 'paid';
+    link.paidAt = new Date().toISOString();
+    
+    // Store transaction
+    paymentLinkTransactions.push({
+      id: uuidv4(),
+      paymentLinkId: paymentId,
+      amount: link.amount,
+      status: 'completed',
+      payfastPaymentId: pfData.pf_payment_id,
+      createdAt: new Date().toISOString()
+    });
+    
+    console.log(`✅ Payment completed for link ${paymentId}`);
+  }
+  
+  res.send('OK');
+});
+
+// Cancel payment link
+router.delete('/payments/links/:id', (req, res) => {
+  const index = paymentLinks.findIndex(l => l.id === req.params.id);
+  if (index === -1) {
+    return res.status(404).json({ error: 'Payment link not found' });
+  }
+  
+  paymentLinks.splice(index, 1);
+  res.json({ success: true });
 });
 
 export default router;

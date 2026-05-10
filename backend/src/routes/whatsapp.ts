@@ -1,69 +1,66 @@
 import express from 'express';
 import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
 
 // Store user tokens (in-memory for now)
 const userTokens: Record<string, { token: string; expiresAt: number }> = {};
 
-// Generate WhatsApp QR code using Meta Graph API
-router.get('/qr', async (req, res) => {
+// Store QR sessions
+const qrSessions: Map<string, { userId: string; createdAt: number; status: string }> = new Map();
+
+// Generate device-linking QR code
+router.get('/qr/generate', async (req, res) => {
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
 
   if (!accessToken || !phoneNumberId) {
-    return res.status(400).json({ error: 'WhatsApp API not configured' });
-  }
-
-  try {
-    // For Embedded Signup, we return a config ID instead of QR code
-    res.json({ 
-      configId: process.env.META_CONFIG_ID,
-      appId: process.env.META_APP_ID,
-      redirectUri: `${process.env.APP_URL || 'https://zenzap-omega.vercel.app'}/api/whatsapp/callback`
+    return res.status(400).json({
+      error: 'WhatsApp API not configured',
+      setupRequired: true
     });
-  } catch (error) {
-    console.error('QR generation error:', error);
-    res.status(500).json({ error: 'Failed to generate QR code' });
-  }
-});
-
-// Exchange authorization code for access token
-router.post('/exchange-token', async (req, res) => {
-  const { code, userId } = req.body;
-
-  if (!code) {
-    return res.status(400).json({ error: 'Missing authorization code' });
   }
 
   try {
-    // Exchange code for access token
-    const response = await axios.get('https://graph.facebook.com/v22.0/oauth/access_token', {
-      params: {
-        client_id: process.env.META_APP_ID,
-        client_secret: process.env.META_APP_SECRET,
-        redirect_uri: `${process.env.APP_URL || 'https://zenzap-omega.vercel.app'}/api/whatsapp/callback`,
-        code: code
+    const sessionId = uuidv4();
+    const userId = req.query.userId as string;
+
+    qrSessions.set(sessionId, {
+      userId: userId || 'unknown',
+      createdAt: Date.now(),
+      status: 'pending'
+    });
+
+    // Generate QR code using Meta API
+    const response = await axios.post(
+      `https://graph.facebook.com/v22.0/${phoneNumberId}/message_qrdls`,
+      {
+        prefilled_message: 'Connect to ZENZAP',
+        qr_code_options: {
+          qr_code_size: 512
+        }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
       }
+    );
+
+    res.json({
+      sessionId,
+      qrCode: response.data.qr_code,
+      qrCodeUrl: response.data.qr_code_url,
+      expiry: response.data.expiry_time,
+      success: true
     });
-
-    const { access_token, expires_in } = response.data;
-
-    // Store token for user
-    if (userId) {
-      userTokens[userId] = {
-        token: access_token,
-        expiresAt: Date.now() + (expires_in * 1000)
-      };
-    }
-
-    console.log('✅ Token exchanged successfully');
-    res.json({ success: true, expiresIn: expires_in });
   } catch (error: any) {
-    console.error('Token exchange error:', error.response?.data || error.message);
-    res.status(500).json({ 
-      error: 'Failed to exchange token',
-      details: error.response?.data?.error?.message || 'Unknown error'
+    console.error('QR generation error:', error.response?.data || error.message);
+    res.status(500).json({
+      error: 'Failed to generate QR code',
+      details: error.response?.data?.error?.message
     });
   }
 });
@@ -83,15 +80,35 @@ router.get('/callback', async (req, res) => {
   if (code) {
     // Redirect to frontend with the code
     res.redirect(`${redirectUri}?code=${code}`);
-  } else {
-    res.redirect(`${redirectUri}?error=no_code`);
   }
 });
 
-// Get connection status
-router.get('/status', async (req, res) => {
-  // Check if user has a valid token (simplified)
-  res.json({ status: 'disconnected' });
+// Check QR connection status
+router.get('/qr/status/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  const session = qrSessions.get(sessionId);
+
+  if (session && session.status === 'connected') {
+    res.json({ status: 'connected' });
+  } else if (session) {
+    res.json({ status: 'pending' });
+  } else {
+    res.json({ status: 'expired' });
+  }
+});
+
+// Update connection status (called from webhook)
+router.post('/qr/connected', (req, res) => {
+  const { sessionId, userId } = req.body;
+
+  if (sessionId && qrSessions.has(sessionId)) {
+    const session = qrSessions.get(sessionId);
+    session!.status = 'connected';
+    qrSessions.set(sessionId, session!);
+    console.log(`✅ WhatsApp connected for user ${userId || session?.userId}`);
+  }
+
+  res.json({ success: true });
 });
 
 export default router;
