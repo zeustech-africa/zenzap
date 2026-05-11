@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -88,6 +89,15 @@ router.post('/register', async (req, res) => {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Registration failed' });
   }
+});
+
+// Get current user from token
+router.get('/me', authenticateToken, (req: any, res) => {
+  const user = users.find(u => u.id === (req as any).user.id);
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  res.json({ id: user.id, email: user.email, name: user.businessName || user.ownerName });
 });
 
 router.post('/login', async (req, res) => {

@@ -2,67 +2,73 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { QRCodeSVG } from 'qrcode.react';
 
 export default function WhatsAppConnectionPage() {
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [status, setStatus] = useState<'loading' | 'pending' | 'connected' | 'expired'>('loading');
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    generateQRCode();
+    // Check URL params for connection result
+    const urlParams = new URLSearchParams(window.location.search);
+    const connectedParam = urlParams.get('connected');
+    const errorParam = urlParams.get('error');
+    
+    if (connectedParam === 'true') {
+      setConnected(true);
+    }
+    if (errorParam) {
+      setError(errorParam);
+    }
+    
+    // Also check status via API
+    checkStatus();
   }, []);
 
-  useEffect(() => {
-    if (sessionId && status !== 'connected') {
-      const interval = setInterval(checkStatus, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [sessionId, status]);
-
-  const generateQRCode = async () => {
-    setStatus('loading');
-    setError('');
-
+  const checkStatus = async () => {
     try {
       const userId = localStorage.getItem('userId');
-      const response = await fetch(`/api/whatsapp/qr/generate?userId=${userId}`);
+      const response = await fetch(`/api/whatsapp/status?userId=${userId}`);
       const data = await response.json();
-
-      if (response.ok && data.qrCode) {
-        setQrCode(data.qrCode);
-        setSessionId(data.sessionId);
-        setStatus('pending');
-      } else {
-        setError(data.error || 'Failed to generate QR code');
-        setStatus('expired');
-      }
-    } catch (err) {
-      setError('Network error. Please try again.');
-      setStatus('expired');
+      setConnected(data.status === 'connected');
+    } catch (error) {
+      console.error('Failed to check status:', error);
     }
   };
 
-  const checkStatus = async () => {
-    if (!sessionId) return;
-
+  const startConnection = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const response = await fetch(`/api/whatsapp/qr/status/${sessionId}`);
-      const data = await response.json();
-
-      if (data.status === 'connected') {
-        setStatus('connected');
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 2000);
-      }
-    } catch (err) {
-      console.error('Status check failed:', err);
+      // Get user ID from the token or from a protected endpoint
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const userData = await response.json();
+      const userId = userData.id;
+      
+      const authResponse = await fetch(`/api/whatsapp/auth-url?userId=${userId}`);
+      const data = await authResponse.json();
+      window.location.href = data.authUrl;
+    } catch (error) {
+      setError('Failed to start connection. Please try again.');
+      setLoading(false);
     }
   };
 
-  if (status === 'connected') {
+  const disconnect = async () => {
+    if (!confirm('Disconnect WhatsApp? You will no longer receive messages in ZENZAP.')) return;
+    try {
+      const userId = localStorage.getItem('userId');
+      await fetch(`/api/whatsapp/disconnect?userId=${userId}`, { method: 'DELETE' });
+      setConnected(false);
+    } catch (error) {
+      alert('Failed to disconnect');
+    }
+  };
+
+  if (connected) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-900 to-orange-800">
         <div className="container mx-auto px-6 py-12 max-w-2xl">
@@ -72,11 +78,17 @@ export default function WhatsAppConnectionPage() {
             </div>
             <h1 className="text-2xl font-bold text-white mb-4">WhatsApp Connected!</h1>
             <p className="text-gray-300 mb-6">
-              Your WhatsApp is now connected to ZENZAP.
+              Your WhatsApp Business account is successfully connected to ZENZAP.
             </p>
+            <button
+              onClick={disconnect}
+              className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg transition"
+            >
+              Disconnect
+            </button>
             <Link
               href="/dashboard"
-              className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-2 rounded-lg transition"
+              className="inline-block ml-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition"
             >
               Go to Dashboard
             </Link>
@@ -100,65 +112,49 @@ export default function WhatsAppConnectionPage() {
       <div className="container mx-auto px-6 py-12 max-w-2xl">
         <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
           <div className="text-center mb-6">
-            <div className="text-5xl mb-4">📱</div>
-            <h1 className="text-2xl font-bold text-white mb-2">Connect Your WhatsApp</h1>
-            <p className="text-gray-300">Simple 30-second setup</p>
+            <div className="text-5xl mb-4">💬</div>
+            <h1 className="text-2xl font-bold text-white mb-4">Connect Your WhatsApp Business</h1>
+            <p className="text-gray-300">
+              Connect your WhatsApp Business account to start automating customer conversations.
+            </p>
           </div>
 
-          {status === 'loading' ? (
-            <div className="py-12 text-center">
-              <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-              <p className="text-gray-400 mt-4">Generating QR code...</p>
+          {error && (
+            <div className="bg-red-500/20 border border-red-500 rounded-lg p-3 mb-6 text-center">
+              <p className="text-red-300 text-sm">Connection failed: {error}</p>
             </div>
-          ) : error ? (
-            <div className="bg-red-500/20 border border-red-500 rounded-lg p-4 text-center">
-              <p className="text-red-300">{error}</p>
-              <button
-                onClick={generateQRCode}
-                className="mt-3 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition"
-              >
-                Try Again
-              </button>
-            </div>
-          ) : qrCode ? (
-            <div>
-              <div className="bg-white p-4 rounded-xl inline-block mb-6">
-                <QRCodeSVG value={qrCode} size={256} />
-              </div>
+          )}
 
-              <div className="bg-white/5 rounded-lg p-4 text-left mb-6">
-                <h3 className="text-white font-semibold mb-3 text-center">📱 Simple 3-Step Setup:</h3>
-                <ol className="text-gray-300 text-sm space-y-3">
-                  <li className="flex items-start gap-3">
-                    <span className="bg-orange-500 w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">1</span>
-                    <span>Open WhatsApp Business on your phone</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="bg-orange-500 w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">2</span>
-                    <span>Go to <strong>Settings → Linked Devices → Link a Device</strong></span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="bg-orange-500 w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">3</span>
-                    <span>Scan the QR code above with your phone</span>
-                  </li>
-                </ol>
-              </div>
+          <div className="bg-blue-500/10 rounded-lg p-4 mb-6 border border-blue-500/30">
+            <h3 className="text-blue-400 font-semibold mb-2">📋 What you need:</h3>
+            <ul className="text-gray-300 text-sm space-y-1 list-disc list-inside">
+              <li>A Facebook Business account</li>
+              <li>A WhatsApp Business number</li>
+              <li>5 minutes to complete the setup</li>
+            </ul>
+          </div>
 
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-center">
-                <p className="text-blue-400 text-sm">
-                  ⏳ Waiting for connection... {status === 'pending' && 'Scan the QR code to connect'}
-                </p>
-              </div>
-            </div>
-          ) : null}
+          <button
+            onClick={startConnection}
+            disabled={loading}
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50"
+          >
+            {loading ? 'Connecting...' : 'Connect WhatsApp Business →'}
+          </button>
 
-          <div className="mt-6 text-center">
-            <button
-              onClick={generateQRCode}
-              className="text-gray-400 hover:text-white text-sm underline"
-            >
-              Refresh QR Code
-            </button>
+          <div className="mt-6 bg-white/5 rounded-lg p-4 text-left">
+            <h3 className="text-white font-semibold mb-2">📋 What happens next:</h3>
+            <ol className="text-gray-400 text-sm space-y-2 list-decimal list-inside">
+              <li>You'll be redirected to Facebook to log in</li>
+              <li>Grant permission for ZENZAP to manage your WhatsApp</li>
+              <li>Select your WhatsApp Business number</li>
+              <li>You'll be redirected back to ZENZAP</li>
+              <li>Your WhatsApp is connected!</li>
+            </ol>
+          </div>
+
+          <div className="mt-4 text-yellow-500/80 text-sm bg-yellow-500/10 p-3 rounded-lg">
+            <strong>Note:</strong> You can continue using your WhatsApp Business app. ZENZAP works alongside it!
           </div>
         </div>
       </div>

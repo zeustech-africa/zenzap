@@ -38,6 +38,7 @@ fetch('https://zenzap-backend.onrender.com/api/auth/login', {
 
       if (response.ok) {
         localStorage.setItem('token', data.token);
+        localStorage.setItem('userId', data.user.id);
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.removeItem('pendingEmail');
         router.push('/dashboard');

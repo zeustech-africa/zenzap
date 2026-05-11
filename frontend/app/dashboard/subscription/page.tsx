@@ -4,91 +4,122 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 interface Plan {
+  id: string;
   name: string;
   price: number;
-  messages: number | string;
-  agents: number | string;
-  monthly?: boolean;
-  yearly?: boolean;
-  discount?: string;
+  features: string[];
+  limits: {
+    messagesPerMonth: number;
+    agents: number;
+  };
+  popular?: boolean;
 }
 
 export default function SubscriptionPage() {
-  const [plans, setPlans] = useState<Record<string, Plan>>({});
-  const [currentSubscription, setCurrentSubscription] = useState<any>(null);
+  const [currentPlan, setCurrentPlan] = useState<string>('free');
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState<string | null>(null);
+
+  const plans: Plan[] = [
+    {
+      id: 'free',
+      name: 'Free',
+      price: 0,
+      features: [
+        'Connect WhatsApp Business',
+        'Basic Inbox',
+        '5 Auto-Replies',
+        '100 Contacts',
+        '10 Broadcasts/month',
+        '3 Templates',
+        '1 Flow',
+        '10 Products in Catalog',
+        'Basic Support'
+      ],
+      limits: { messagesPerMonth: 500, agents: 1 }
+    },
+    {
+      id: 'starter',
+      name: 'Starter',
+      price: 299,
+      features: [
+        'Everything in Free',
+        'Unlimited Auto-Replies',
+        '1,000 Contacts',
+        '100 Broadcasts/month',
+        '20 Templates',
+        '5 Flows',
+        '100 Products in Catalog',
+        'Agent Performance Tracking',
+        'Quality Rating Dashboard'
+      ],
+      limits: { messagesPerMonth: 5000, agents: 3 }
+    },
+    {
+      id: 'pro',
+      name: 'Pro',
+      price: 599,
+      features: [
+        'Everything in Starter',
+        'Unlimited Contacts',
+        'Unlimited Broadcasts',
+        'Unlimited Templates',
+        'Unlimited Flows',
+        'AI Natural Language Understanding',
+        'Instagram DM Integration',
+        'Abandoned Cart Recovery',
+        'Payment Links',
+        'Webhook Integrations'
+      ],
+      limits: { messagesPerMonth: 25000, agents: 10 },
+      popular: true
+    },
+    {
+      id: 'business',
+      name: 'Business',
+      price: 999,
+      features: [
+        'Everything in Pro',
+        'Shopify Integration',
+        'HubSpot CRM Integration',
+        'Salesforce CRM Integration',
+        'WhatsApp Voice/Video Calls',
+        'Green Tick Verification Guide',
+        'Opt-in Management',
+        'Coexistence Mode',
+        'Priority Support',
+        'API Access'
+      ],
+      limits: { messagesPerMonth: -1, agents: -1 }
+    }
+  ];
 
   useEffect(() => {
-    fetchPlans();
-    fetchSubscription();
+    // Simulate loading current plan from backend/localStorage
+    const saved = localStorage.getItem('subscriptionPlan');
+    if (saved) {
+      setCurrentPlan(saved);
+    }
+    setLoading(false);
   }, []);
 
-  const fetchPlans = async () => {
-    try {
-      const response = await fetch('/api/plans');
-      const data = await response.json();
-      setPlans(data);
-    } catch (error) {
-      console.error('Failed to fetch plans:', error);
-    }
+  const getFeatureLimitText = (plan: Plan) => {
+    if (plan.id === 'business') return 'Unlimited';
+    if (plan.id === 'pro') return '25,000/month';
+    if (plan.id === 'starter') return '5,000/month';
+    return '500/month';
   };
 
-  const fetchSubscription = async () => {
-    try {
-      const response = await fetch('/api/subscription/default');
-      const data = await response.json();
-      setCurrentSubscription(data);
-    } catch (error) {
-      console.error('Failed to fetch subscription:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const subscribe = async (planKey: string, plan: Plan) => {
-    setProcessing(planKey);
-    try {
-      const response = await fetch(`/api/subscribe/${planKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          businessId: 'default',
-          email: 'business@example.com',
-          name: 'Business Owner',
-          returnUrl: window.location.origin + '/dashboard/subscription/success'
-        })
-      });
-      
-      const data = await response.json();
-      
-      // Create form and submit to PayFast
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = data.paymentUrl;
-      
-      for (const [key, value] of Object.entries(data.formData)) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = value as string;
-        form.appendChild(input);
-      }
-      
-      document.body.appendChild(form);
-      form.submit();
-    } catch (error) {
-      console.error('Failed to initiate payment:', error);
-      alert('Payment initiation failed. Please try again.');
-    } finally {
-      setProcessing(null);
-    }
+  const getAgentLimitText = (plan: Plan) => {
+    if (plan.id === 'business') return 'Unlimited';
+    if (plan.id === 'pro') return '10 agents';
+    if (plan.id === 'starter') return '3 agents';
+    return '1 agent';
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-900 to-orange-800 flex items-center justify-center">
-        <div className="text-white">Loading subscription plans...</div>
+        <div className="text-white">Loading plans...</div>
       </div>
     );
   }
@@ -105,105 +136,78 @@ export default function SubscriptionPage() {
       </div>
 
       <div className="container mx-auto px-6 py-8">
-        {/* Current Subscription Status */}
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 mb-8">
-          <h2 className="text-white font-bold mb-4">Current Plan</h2>
-          {currentSubscription?.status === 'active' ? (
-            <div>
-              <div className="text-2xl font-bold text-white mb-2">
-                {currentSubscription.plan === 'starter' ? 'Starter Plan' : 
-                 currentSubscription.plan === 'pro' ? 'Pro Plan' : 'Business Plan'}
-              </div>
-              <div className="text-gray-300">
-                Active until: {new Date(currentSubscription.endDate).toLocaleDateString()}
-              </div>
-              <div className="text-green-400 mt-2">
-                ✅ {currentSubscription.daysRemaining} days remaining
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div className="text-white mb-2">Free Plan</div>
-              <div className="text-gray-400">Upgrade to unlock more features</div>
-            </div>
-          )}
+        <div className="text-center mb-12">
+          <h1 className="text-3xl font-bold text-white mb-4">Choose Your Plan</h1>
+          <p className="text-gray-300">Upgrade to unlock more features. Start with 14-day free trial.</p>
         </div>
 
-        {/* Pricing Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Starter Plan */}
-          {plans.starter && (
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-              <h2 className="text-xl font-bold text-white mb-2">Starter</h2>
-              <div className="text-3xl font-bold text-orange-400 mb-4">R{plans.starter.price}<span className="text-sm text-gray-400">/month</span></div>
-              <ul className="space-y-2 mb-6">
-                <li className="text-gray-300">✓ {plans.starter.messages.toLocaleString()} messages/month</li>
-                <li className="text-gray-300">✓ {plans.starter.agents} agents</li>
-                <li className="text-gray-300">✓ Core features</li>
-                <li className="text-gray-300">✓ Email support</li>
-              </ul>
-              <button
-                onClick={() => subscribe('starter', plans.starter)}
-                disabled={processing === 'starter'}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50"
-              >
-                {processing === 'starter' ? 'Processing...' : 'Subscribe Now'}
-              </button>
-            </div>
-          )}
-
-          {/* Pro Plan */}
-          {plans.pro && (
-            <div className="bg-white/15 backdrop-blur-md rounded-xl border-2 border-orange-500 p-6 relative">
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white text-xs px-3 py-1 rounded-full">
-                Most Popular
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {plans.map((plan) => (
+            <div
+              key={plan.id}
+              className={`bg-white/10 backdrop-blur-md rounded-xl p-6 border relative ${
+                plan.popular ? 'border-orange-500 ring-2 ring-orange-500/50' : 'border-white/20'
+              }`}
+            >
+              {plan.popular && (
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                  Most Popular
+                </div>
+              )}
+              
+              <h2 className="text-xl font-bold text-white mb-2">{plan.name}</h2>
+              <div className="mb-4">
+                <span className="text-3xl font-bold text-orange-400">R{plan.price}</span>
+                <span className="text-gray-400">/month</span>
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">Pro</h2>
-              <div className="text-3xl font-bold text-orange-400 mb-4">R{plans.pro.price}<span className="text-sm text-gray-400">/month</span></div>
+              
+              <div className="mb-4 pb-4 border-b border-white/10">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Messages</span>
+                  <span className="text-white font-medium">{getFeatureLimitText(plan)}</span>
+                </div>
+                <div className="flex justify-between text-sm mt-2">
+                  <span className="text-gray-400">Agents</span>
+                  <span className="text-white font-medium">{getAgentLimitText(plan)}</span>
+                </div>
+              </div>
+              
               <ul className="space-y-2 mb-6">
-                <li className="text-gray-300">✓ {plans.pro.messages.toLocaleString()} messages/month</li>
-                <li className="text-gray-300">✓ {plans.pro.agents} agents</li>
-                <li className="text-gray-300">✓ AI features</li>
-                <li className="text-gray-300">✓ Analytics dashboard</li>
-                <li className="text-gray-300">✓ Priority support</li>
+                {plan.features.slice(0, 6).map((feature, idx) => (
+                  <li key={idx} className="text-gray-300 text-sm flex items-start gap-2">
+                    <span className="text-green-400">✓</span>
+                    {feature}
+                  </li>
+                ))}
+                {plan.features.length > 6 && (
+                  <li className="text-gray-500 text-sm">+{plan.features.length - 6} more features</li>
+                )}
               </ul>
-              <button
-                onClick={() => subscribe('pro', plans.pro)}
-                disabled={processing === 'pro'}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50"
-              >
-                {processing === 'pro' ? 'Processing...' : 'Subscribe Now'}
-              </button>
+              
+              {plan.id === currentPlan ? (
+                <div className="w-full bg-green-500/20 text-green-400 text-center py-2 rounded-lg">
+                  Current Plan
+                </div>
+              ) : (
+                <button
+                  onClick={() => alert(`Upgrade to ${plan.name} plan - Payment integration coming soon`)}
+                  className={`w-full py-2 rounded-lg font-semibold transition ${
+                    plan.id === 'free'
+                      ? 'bg-white/10 hover:bg-white/20 text-white'
+                      : 'bg-orange-500 hover:bg-orange-600 text-white'
+                  }`}
+                >
+                  {plan.id === 'free' ? 'Downgrade' : 'Upgrade'}
+                </button>
+              )}
             </div>
-          )}
-
-          {/* Business Plan */}
-          {plans.business && (
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-              <h2 className="text-xl font-bold text-white mb-2">Business</h2>
-              <div className="text-3xl font-bold text-orange-400 mb-4">R{plans.business.price}<span className="text-sm text-gray-400">/month</span></div>
-              <ul className="space-y-2 mb-6">
-                <li className="text-gray-300">✓ {typeof plans.business.messages === 'number' ? plans.business.messages.toLocaleString() : plans.business.messages} messages/month</li>
-                <li className="text-gray-300">✓ {plans.business.agents} agents</li>
-                <li className="text-gray-300">✓ Everything in Pro</li>
-                <li className="text-gray-300">✓ API access</li>
-                <li className="text-gray-300">✓ Dedicated support</li>
-              </ul>
-              <button
-                onClick={() => subscribe('business', plans.business)}
-                disabled={processing === 'business'}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50"
-              >
-                {processing === 'business' ? 'Processing...' : 'Subscribe Now'}
-              </button>
-            </div>
-          )}
+          ))}
         </div>
 
-        <div className="mt-8 text-center text-gray-400 text-sm">
-          <p>🔒 Secure payments via PayFast (South Africa's leading payment gateway)</p>
-          <p>✅ Credit cards, Instant EFT, and more accepted</p>
-          <p>💰 14-day money-back guarantee. Cancel anytime.</p>
+        <div className="mt-8 bg-white/5 rounded-lg p-4 text-center">
+          <p className="text-gray-400 text-sm">
+            All plans include a 14-day free trial. Cancel anytime. Pay in Rands, no hidden fees.
+          </p>
         </div>
       </div>
     </div>

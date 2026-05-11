@@ -58,6 +58,18 @@ export default function SettingsPage() {
       </div>
 
       <div className="container mx-auto px-6 py-8 max-w-2xl">
+        {/* WhatsApp Connection Link */}
+        <Link 
+          href="/dashboard/whatsapp-connection"
+          className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition mb-6 border border-white/10"
+        >
+          <div>
+            <div className="text-white font-medium">📱 Connect WhatsApp Business</div>
+            <div className="text-gray-400 text-sm">Click to connect your WhatsApp Business account</div>
+          </div>
+          <span className="text-orange-400">→</span>
+        </Link>
+
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
           <h2 className="text-white font-bold mb-6">Business Settings</h2>
           
@@ -136,9 +148,12 @@ export default function SettingsPage() {
                 <div className="text-white">Free Plan</div>
                 <div className="text-gray-400 text-sm">500 messages/month, 1 agent</div>
               </div>
-              <button className="bg-white/10 hover:bg-white/20 text-white px-4 py-1 rounded-lg transition">
-                Upgrade
-              </button>
+              <Link
+                href="/dashboard/subscription"
+                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition"
+              >
+                Upgrade Plan
+              </Link>
             </div>
           </div>
         </div>
