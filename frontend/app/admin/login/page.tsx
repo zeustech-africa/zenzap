@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://zenzap-backend.onrender.com/api';
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -20,8 +21,7 @@ export default function AdminLogin() {
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
     if (token) {
-      // Verify token
-      fetch('/api/admin/verify', {
+      fetch(`${API_URL}/admin/verify`, {
         headers: { 'Authorization': `Bearer ${token}` }
       }).then(res => {
         if (res.ok) {
@@ -39,7 +39,7 @@ export default function AdminLogin() {
     setError('');
 
     try {
-      const res = await fetch('/api/admin/login', {
+      const res = await fetch(`${API_URL}/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -77,7 +77,7 @@ export default function AdminLogin() {
     setError('');
     
     try {
-      const res = await fetch('/api/admin/setup', {
+      const res = await fetch(`${API_URL}/admin/setup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: setupEmail, password: setupPassword })
