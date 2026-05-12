@@ -38,6 +38,11 @@ export default function AdminLogin() {
     setLoading(true);
     setError('');
 
+    // DEBUG: Hardcoded to bypass env variable issues
+    const API_URL = 'https://zenzap-backend.onrender.com/api';
+    console.log('API_URL:', API_URL);
+    console.log('Fetching:', `${API_URL}/admin/login`);
+
     try {
       const res = await fetch(`${API_URL}/admin/login`, {
         method: 'POST',
