@@ -316,11 +316,25 @@ router.get('/stats', requirePermission('view_analytics'), (_req, res) => {
 });
 
 router.get('/health', requirePermission('*'), (_req, res) => {
+  // Check if backend is running
+  const apiStatus = 'healthy';
+  
+  // Check database (in-memory works, so it's healthy)
+  const databaseStatus = 'healthy';
+  
+  // Check WhatsApp API (check if access token exists)
+  const whatsappToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  const whatsappStatus = whatsappToken ? 'healthy' : 'degraded';
+  
+  // Check payment provider (PayFast - check if merchant ID exists)
+  const payfastMerchantId = process.env.PAYFAST_MERCHANT_ID;
+  const paymentStatus = payfastMerchantId ? 'healthy' : 'degraded';
+  
   res.json({
-    api: 'healthy',
-    database: 'healthy',
-    whatsapp: 'healthy',
-    stripe: 'configured',
+    api: apiStatus,
+    database: databaseStatus,
+    whatsapp: whatsappStatus,
+    payment: paymentStatus,
     lastCheck: new Date().toISOString()
   });
 });

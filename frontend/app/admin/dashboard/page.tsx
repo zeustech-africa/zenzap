@@ -23,7 +23,7 @@ interface SystemHealth {
   api: 'healthy' | 'degraded' | 'down';
   database: 'healthy' | 'degraded' | 'down';
   whatsapp: 'healthy' | 'degraded' | 'down';
-  stripe: 'healthy' | 'degraded' | 'down';
+  payment: 'healthy' | 'degraded' | 'down';
   lastCheck: string;
 }
 
@@ -323,10 +323,10 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-300">Stripe</span>
+                  <span className="text-gray-300">PayFast</span>
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${getHealthColor(systemHealth?.stripe || 'degraded')}`}></div>
-                    <span className="text-white text-sm">{systemHealth?.stripe || 'Unknown'}</span>
+                    <div className={`w-2 h-2 rounded-full ${getHealthColor(systemHealth?.payment || 'degraded')}`}></div>
+                    <span className="text-white text-sm">{systemHealth?.payment || 'Unknown'}</span>
                   </div>
                 </div>
               </div>
@@ -617,11 +617,11 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                  <span className="text-gray-300">Stripe Payment Gateway</span>
+                  <span className="text-gray-300">PayFast Payment Gateway</span>
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${getHealthColor(systemHealth?.stripe || 'degraded')}`}></div>
-                    <span className="text-white">{systemHealth?.stripe || 'Unknown'}</span>
-                    <span className="text-gray-500 text-sm ml-4">Configured</span>
+                    <div className={`w-2 h-2 rounded-full ${getHealthColor(systemHealth?.payment || 'degraded')}`}></div>
+                    <span className="text-white">{systemHealth?.payment || 'Unknown'}</span>
+                    <span className="text-gray-500 text-sm ml-4">Pending Configuration</span>
                   </div>
                 </div>
               </div>
