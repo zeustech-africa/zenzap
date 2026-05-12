@@ -355,27 +355,39 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Link href="/admin/chat" className="bg-orange-500/20 hover:bg-orange-500/30 rounded-xl p-4 text-center border border-orange-500/30 transition">
-                <div className="text-2xl mb-2">💬</div>
-                <div className="text-white font-semibold">Support Chat</div>
-                <div className="text-gray-400 text-sm">Manage tickets</div>
+            {/* Quick Navigation */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Link href="/admin/users" className="bg-white/10 p-4 rounded-lg hover:bg-white/20 transition">
+                <div className="text-2xl mb-2">👥</div>
+                <div className="text-white">Users</div>
               </Link>
-              <Link href="/admin/analytics" className="bg-orange-500/20 hover:bg-orange-500/30 rounded-xl p-4 text-center border border-orange-500/30 transition">
+              <Link href="/admin/broadcast" className="bg-white/10 p-4 rounded-lg hover:bg-white/20 transition">
+                <div className="text-2xl mb-2">📢</div>
+                <div className="text-white">Broadcast</div>
+              </Link>
+              <Link href="/admin/analytics" className="bg-white/10 p-4 rounded-lg hover:bg-white/20 transition">
                 <div className="text-2xl mb-2">📊</div>
-                <div className="text-white font-semibold">Analytics</div>
-                <div className="text-gray-400 text-sm">System insights</div>
+                <div className="text-white">Analytics</div>
               </Link>
-              <Link href="/admin/settings" className="bg-orange-500/20 hover:bg-orange-500/30 rounded-xl p-4 text-center border border-orange-500/30 transition">
+              <Link href="/admin/settings" className="bg-white/10 p-4 rounded-lg hover:bg-white/20 transition">
                 <div className="text-2xl mb-2">⚙️</div>
-                <div className="text-white font-semibold">Settings</div>
-                <div className="text-gray-400 text-sm">Configure system</div>
+                <div className="text-white">Settings</div>
               </Link>
-              <Link href="/admin/broadcast" className="bg-orange-500/20 hover:bg-orange-500/30 rounded-xl p-4 text-center border border-orange-500/30 transition">
-                <div className="text-2xl mb-2">📧</div>
-                <div className="text-white font-semibold">Broadcast</div>
-                <div className="text-gray-400 text-sm">Email all users</div>
+              <Link href="/admin/api-docs" className="bg-white/10 p-4 rounded-lg hover:bg-white/20 transition">
+                <div className="text-2xl mb-2">📚</div>
+                <div className="text-white">API Docs</div>
+              </Link>
+              <Link href="/admin/audit-logs" className="bg-white/10 p-4 rounded-lg hover:bg-white/20 transition">
+                <div className="text-2xl mb-2">📜</div>
+                <div className="text-white">Audit Logs</div>
+              </Link>
+              <Link href="/admin/billing" className="bg-white/10 p-4 rounded-lg hover:bg-white/20 transition">
+                <div className="text-2xl mb-2">💰</div>
+                <div className="text-white">Billing</div>
+              </Link>
+              <Link href="/admin/chat" className="bg-white/10 p-4 rounded-lg hover:bg-white/20 transition">
+                <div className="text-2xl mb-2">💬</div>
+                <div className="text-white">Chat</div>
               </Link>
             </div>
           </div>
