@@ -1,134 +1,291 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
 interface AutoReplyRule {
   id: string;
   keyword: string;
   response: string;
   enabled: boolean;
+  matchExact: boolean;
 }
 
 export default function AutoRepliesPage() {
-  const [rules, setRules] = useState<AutoReplyRule[]>([
-    { id: '1', keyword: 'price', response: 'Our pricing starts at R299/month. Would you like a demo?', enabled: true },
-    { id: '2', keyword: 'hours', response: 'We are open Mon-Fri 9am-5pm. How can we help?', enabled: true },
-    { id: '3', keyword: 'booking', response: 'You can book an appointment here: [booking link]', enabled: false },
-  ]);
-
-  const [newKeyword, setNewKeyword] = useState('');
-  const [newResponse, setNewResponse] = useState('');
-  const [businessHours, setBusinessHours] = useState({ start: '09:00', end: '17:00' });
-
-  const addRule = () => {
-    if (!newKeyword || !newResponse) return;
-    setRules([...rules, { id: Date.now().toString(), keyword: newKeyword, response: newResponse, enabled: true }]);
-    setNewKeyword('');
-    setNewResponse('');
+  const [rules, setRules] = useState<AutoReplyRule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingRule, setEditingRule] = useState<AutoReplyRule | null>(null);
+  const [keyword, setKeyword] = useState('');
+  const [response, setResponse] = useState('');
+  const [matchExact, setMatchExact] = useState(false);
+  
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://zenzap-backend.onrender.com';
+  
+  useEffect(() => {
+    fetchRules();
+  }, []);
+  
+  const fetchRules = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/automation/rules`, {
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRules(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch rules:', error);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const toggleRule = (id: string) => {
-    setRules(rules.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
+  
+  const handleSaveRule = async () => {
+    if (!keyword.trim() || !response.trim()) {
+      alert('Please enter both keyword and response');
+      return;
+    }
+    
+    setSaving(true);
+    
+    try {
+      let res;
+      if (editingRule) {
+        res = await fetch(`${API_URL}/api/automation/rules/${editingRule.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            keyword: keyword.trim(),
+            response: response.trim(),
+            matchExact,
+            enabled: editingRule.enabled,
+          }),
+        });
+      } else {
+        res = await fetch(`${API_URL}/api/automation/rules`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            keyword: keyword.trim(),
+            response: response.trim(),
+            matchExact,
+          }),
+        });
+      }
+      
+      if (res.ok) {
+        resetForm();
+        fetchRules();
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to save rule');
+      }
+    } catch (error) {
+      alert('Network error. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
-
-  const deleteRule = (id: string) => {
-    setRules(rules.filter(r => r.id !== id));
+  
+  const handleToggleRule = async (rule: AutoReplyRule) => {
+    try {
+      const res = await fetch(`${API_URL}/api/automation/rules/${rule.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...rule,
+          enabled: !rule.enabled,
+        }),
+      });
+      if (res.ok) fetchRules();
+    } catch (error) {
+      alert('Failed to update rule');
+    }
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 to-orange-800">
-      <div className="bg-black/30 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <Link href="/dashboard" className="text-gray-400 hover:text-white transition">
-            ← Dashboard
-          </Link>
-          <span className="text-white font-bold ml-4">Auto-Replies</span>
-        </div>
+  
+  const handleDeleteRule = async (id: string) => {
+    if (!confirm('Delete this auto-reply rule?')) return;
+    try {
+      const res = await fetch(`${API_URL}/api/automation/rules/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (res.ok) fetchRules();
+    } catch (error) {
+      alert('Failed to delete rule');
+    }
+  };
+  
+  const resetForm = () => {
+    setKeyword('');
+    setResponse('');
+    setMatchExact(false);
+    setEditingRule(null);
+    setShowForm(false);
+  };
+  
+  const editRule = (rule: AutoReplyRule) => {
+    setEditingRule(rule);
+    setKeyword(rule.keyword);
+    setResponse(rule.response);
+    setMatchExact(rule.matchExact);
+    setShowForm(true);
+  };
+  
+  if (loading) {
+    return (
+      <div className="p-6 flex justify-center">
+        <div className="text-gray-400">Loading auto-reply rules...</div>
       </div>
-
-      <div className="container mx-auto px-6 py-8 max-w-4xl">
-        {/* Business Hours */}
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 mb-6">
-          <h2 className="text-white font-bold mb-4">Business Hours</h2>
-          <div className="flex gap-4">
-            <input
-              type="time"
-              value={businessHours.start}
-              onChange={(e) => setBusinessHours({ ...businessHours, start: e.target.value })}
-              className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
-            />
-            <span className="text-white">to</span>
-            <input
-              type="time"
-              value={businessHours.end}
-              onChange={(e) => setBusinessHours({ ...businessHours, end: e.target.value })}
-              className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
-            />
-            <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition">
-              Save Hours
-            </button>
-          </div>
-          <p className="text-gray-400 text-sm mt-3">Messages received outside business hours will receive an away message.</p>
+    );
+  }
+  
+  return (
+    <div className="p-6 max-w-4xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Auto-Replies</h1>
+          <p className="text-gray-400">Set up automatic responses to customer messages</p>
         </div>
-
-        {/* Auto-Reply Rules */}
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-          <h2 className="text-white font-bold mb-4">Keyword Auto-Replies</h2>
+        {!showForm && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+          >
+            + Add Rule
+          </button>
+        )}
+      </div>
+      
+      {showForm && (
+        <div className="bg-white/10 rounded-lg p-6 mb-6">
+          <h2 className="text-lg font-semibold text-white mb-4">
+            {editingRule ? 'Edit Rule' : 'New Auto-Reply Rule'}
+          </h2>
           
-          {/* Existing Rules */}
-          <div className="space-y-3 mb-6">
-            {rules.map((rule) => (
-              <div key={rule.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-orange-400 font-mono text-sm">/keyword: {rule.keyword}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${rule.enabled ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
-                      {rule.enabled ? 'Active' : 'Disabled'}
-                    </span>
-                  </div>
-                  <p className="text-gray-300 text-sm mt-1">{rule.response}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => toggleRule(rule.id)} className="text-gray-400 hover:text-white text-sm">
-                    {rule.enabled ? 'Disable' : 'Enable'}
-                  </button>
-                  <button onClick={() => deleteRule(rule.id)} className="text-red-400 hover:text-red-300 text-sm">
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Add New Rule */}
-          <div className="border-t border-white/20 pt-4">
-            <h3 className="text-white font-medium mb-3">Add New Auto-Reply Rule</h3>
-            <div className="space-y-3">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-300 mb-1">Keyword</label>
               <input
                 type="text"
-                placeholder="Keyword (e.g., price, hours, booking)"
-                value={newKeyword}
-                onChange={(e) => setNewKeyword(e.target.value.toLowerCase())}
-                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                placeholder="e.g., price, hours, location"
+                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400"
               />
+              <p className="text-xs text-gray-500 mt-1">When customer types this word, auto-reply triggers</p>
+            </div>
+            
+            <div>
+              <label className="block text-sm text-gray-300 mb-1">Auto-Response</label>
               <textarea
-                placeholder="Auto-reply message..."
-                value={newResponse}
-                onChange={(e) => setNewResponse(e.target.value)}
-                rows={2}
-                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500"
+                value={response}
+                onChange={(e) => setResponse(e.target.value)}
+                placeholder="Your automatic reply message..."
+                rows={3}
+                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400"
               />
+            </div>
+            
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={matchExact}
+                onChange={(e) => setMatchExact(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm text-gray-300">Exact match only (not partial)</span>
+            </label>
+            
+            <div className="flex gap-3 pt-2">
               <button
-                onClick={addRule}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition"
+                onClick={handleSaveRule}
+                disabled={saving}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
               >
-                + Add Rule
+                {saving ? 'Saving...' : 'Save Rule'}
+              </button>
+              <button
+                onClick={resetForm}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Cancel
               </button>
             </div>
           </div>
         </div>
-      </div>
+      )}
+      
+      {rules.length === 0 && !showForm ? (
+        <div className="text-center py-12 bg-white/5 rounded-lg">
+          <p className="text-gray-400 mb-4">No auto-reply rules yet</p>
+          <button
+            onClick={() => setShowForm(true)}
+            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+          >
+            Create Your First Rule
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {rules.map((rule) => (
+            <div
+              key={rule.id}
+              className={`bg-white/5 rounded-lg p-4 border ${
+                rule.enabled ? 'border-white/10' : 'border-red-500/30'
+              }`}
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="bg-orange-500/20 text-orange-400 px-2 py-1 rounded text-sm">
+                      Keyword: {rule.keyword}
+                    </span>
+                    {rule.matchExact && (
+                      <span className="bg-blue-500/20 text-blue-400 px-2 py-1 rounded text-sm">
+                        Exact match
+                      </span>
+                    )}
+                    <span className={`text-xs px-2 py-1 rounded ${rule.enabled ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                      {rule.enabled ? 'Active' : 'Disabled'}
+                    </span>
+                  </div>
+                  <p className="text-gray-300">{rule.response}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleToggleRule(rule)}
+                    className={`px-3 py-1 rounded text-sm ${
+                      rule.enabled
+                        ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                        : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                    }`}
+                  >
+                    {rule.enabled ? 'Disable' : 'Enable'}
+                  </button>
+                  <button
+                    onClick={() => editRule(rule)}
+                    className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded text-sm hover:bg-blue-500/30"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteRule(rule.id)}
+                    className="px-3 py-1 bg-red-500/20 text-red-400 rounded text-sm hover:bg-red-500/30"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

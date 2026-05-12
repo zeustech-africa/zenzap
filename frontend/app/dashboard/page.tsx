@@ -235,6 +235,11 @@ export default function Dashboard() {
                   📸 Instagram DMs
                 </Link>
               </HoverTooltip>
+              <HoverTooltip text="Connect your Facebook Page to send and receive Messenger messages">
+                <Link href="/dashboard/facebook" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
+                  💬 Facebook Messenger
+                </Link>
+              </HoverTooltip>
               <HoverTooltip text="Manage your plan, billing, and payment methods">
                 <Link href="/dashboard/subscription" className="block w-full text-left px-4 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10 transition">
                   💳 Subscription & Billing

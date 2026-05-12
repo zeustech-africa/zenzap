@@ -34,6 +34,11 @@ import flowFormRoutes from './routes/flow-forms';
 import shopifyRoutes from './routes/shopify';
 import crmRoutes from './routes/crm';
 import callRoutes from './routes/calls';
+import facebookRoutes from './routes/facebook';
+import broadcastRoutes from './routes/broadcast';
+import contactRoutes from './routes/contacts';
+import settingsRoutes from './routes/settings';
+import automationRoutes from './routes/automation';
 import { reminderService } from './services/reminder';
 import { users, pendingUsers } from './routes/auth';
 import { messages } from './routes/chat';
@@ -91,6 +96,11 @@ app.use('/api', flowFormRoutes);
 app.use('/api', shopifyRoutes);
 app.use('/api', crmRoutes);
 app.use('/api', callRoutes);
+app.use('/api', facebookRoutes);
+app.use('/api', broadcastRoutes);
+app.use('/api', contactRoutes);
+app.use('/api', settingsRoutes);
+app.use('/api', automationRoutes);
 
 // Start reminder service
 reminderService.start();
