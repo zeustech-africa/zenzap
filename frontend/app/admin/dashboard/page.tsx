@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://zenzap-backend.onrender.com/api';
+
 interface User {
   id: string;
   businessName: string;
@@ -74,11 +76,11 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     try {
       const [usersRes, pendingRes, statsRes, healthRes, alertsRes] = await Promise.all([
-        fetch('/api/admin/users'),
-        fetch('/api/admin/pending-users'),
-        fetch('/api/admin/stats'),
-        fetch('/api/admin/health'),
-        fetch('/api/admin/alerts')
+        fetch(`${API_URL}/admin/users`),
+        fetch(`${API_URL}/admin/pending-users`),
+        fetch(`${API_URL}/admin/stats`),
+        fetch(`${API_URL}/admin/health`),
+        fetch(`${API_URL}/admin/alerts`)
       ]);
 
       const usersData = await usersRes.json();
@@ -101,9 +103,15 @@ export default function AdminDashboard() {
 
   const fetchSystemHealth = async () => {
     try {
-      const response = await fetch('/api/admin/health');
+      const response = await fetch(`${API_URL}/admin/health`);
       const data = await response.json();
-      setSystemHealth(data);
+      setSystemHealth({
+        api: data.api || 'degraded',
+        database: data.database || 'degraded',
+        whatsapp: data.whatsapp || 'degraded',
+        payment: data.payment || 'degraded',
+        lastCheck: data.lastCheck || new Date().toISOString()
+      });
     } catch (error) {
       console.error('Failed to fetch system health:', error);
     }
@@ -111,7 +119,7 @@ export default function AdminDashboard() {
 
   const approveUser = async (userId: string) => {
     try {
-      await fetch(`/api/admin/approve/${userId}`, { method: 'POST' });
+      await fetch(`${API_URL}/admin/approve/${userId}`, { method: 'POST' });
       await fetchData();
     } catch (error) {
       console.error('Failed to approve user:', error);
@@ -120,7 +128,7 @@ export default function AdminDashboard() {
 
   const rejectUser = async (userId: string) => {
     try {
-      await fetch(`/api/admin/reject/${userId}`, { method: 'POST' });
+      await fetch(`${API_URL}/admin/reject/${userId}`, { method: 'POST' });
       await fetchData();
     } catch (error) {
       console.error('Failed to reject user:', error);
@@ -129,7 +137,7 @@ export default function AdminDashboard() {
 
   const suspendUser = async (userId: string) => {
     try {
-      await fetch(`/api/admin/suspend/${userId}`, { method: 'POST' });
+      await fetch(`${API_URL}/admin/suspend/${userId}`, { method: 'POST' });
       await fetchData();
     } catch (error) {
       console.error('Failed to suspend user:', error);
@@ -138,7 +146,7 @@ export default function AdminDashboard() {
 
   const changeSubscription = async (userId: string, plan: string) => {
     try {
-      await fetch(`/api/admin/update-subscription/${userId}`, {
+      await fetch(`${API_URL}/admin/update-subscription/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan })
@@ -180,7 +188,7 @@ export default function AdminDashboard() {
 
   const fetchFilteredUsers = async (filterType: string) => {
     try {
-      const response = await fetch(`/api/admin/users?filter=${filterType}`);
+      const response = await fetch(`${API_URL}/admin/users?filter=${filterType}`);
       const data = await response.json();
       setModalUsers(data);
       setModalTitle(getFilterTitle(filterType));
@@ -203,7 +211,7 @@ export default function AdminDashboard() {
 
   const fetchMRRDetails = async () => {
     try {
-      const response = await fetch('/api/admin/mrr-details');
+      const response = await fetch(`${API_URL}/admin/mrr-details`);
       const data = await response.json();
       setMRRDetails(data);
       setShowMRRModal(true);
