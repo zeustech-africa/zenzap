@@ -315,7 +315,7 @@ router.get('/stats', requirePermission('view_analytics'), (_req, res) => {
   });
 });
 
-router.get('/health', requirePermission('*'), (_req, res) => {
+router.get('/health', (_req, res) => {
   // Check if backend is running
   const apiStatus = 'healthy';
   
