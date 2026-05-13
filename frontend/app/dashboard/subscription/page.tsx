@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 
 interface Plan {
@@ -16,8 +16,9 @@ interface Plan {
 }
 
 export default function SubscriptionPage() {
-  const [currentPlan, setCurrentPlan] = useState<string>('free');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<string | null>(null);
+  
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://zenzap-backend.onrender.com/api';
 
   const plans: Plan[] = [
     {
@@ -93,14 +94,52 @@ export default function SubscriptionPage() {
     }
   ];
 
-  useEffect(() => {
-    // Simulate loading current plan from backend/localStorage
-    const saved = localStorage.getItem('subscriptionPlan');
-    if (saved) {
-      setCurrentPlan(saved);
+  const handleSubscribe = async (plan: Plan) => {
+    if (plan.id === 'free') {
+      alert('You are already on the Free plan.');
+      return;
     }
-    setLoading(false);
-  }, []);
+
+    setLoading(plan.id);
+    
+    // Get current user ID from localStorage or context
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    
+    if (!user || !user.id) {
+      alert('Please log in again to continue.');
+      setLoading(null);
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_URL}/payfast/initiate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          user_id: user.id,
+          plan_name: plan.name,
+          amount: plan.price,
+          frequency: 3 // 3 months recurring
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.payment_url) {
+        // Redirect to PayFast payment page
+        window.location.href = data.payment_url;
+      } else {
+        alert(data.error || 'Failed to initiate payment. Please try again.');
+      }
+    } catch (error) {
+      console.error('Payment initiation error:', error);
+      alert('Network error. Please try again.');
+    } finally {
+      setLoading(null);
+    }
+  };
 
   const getFeatureLimitText = (plan: Plan) => {
     if (plan.id === 'business') return 'Unlimited';
@@ -116,14 +155,6 @@ export default function SubscriptionPage() {
     return '1 agent';
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-purple-900 to-orange-800 flex items-center justify-center">
-        <div className="text-white">Loading plans...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 to-orange-800">
       <div className="bg-black/30 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
@@ -138,7 +169,7 @@ export default function SubscriptionPage() {
       <div className="container mx-auto px-6 py-8">
         <div className="text-center mb-12">
           <h1 className="text-3xl font-bold text-white mb-4">Choose Your Plan</h1>
-          <p className="text-gray-300">Upgrade to unlock more features. Start with 14-day free trial.</p>
+          <p className="text-gray-300">Upgrade to unlock more features. Secure payments via PayFast.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -184,20 +215,17 @@ export default function SubscriptionPage() {
                 )}
               </ul>
               
-              {plan.id === currentPlan ? (
-                <div className="w-full bg-green-500/20 text-green-400 text-center py-2 rounded-lg">
+              {plan.id === 'free' ? (
+                <div className="w-full bg-gray-500/20 text-gray-400 text-center py-2 rounded-lg">
                   Current Plan
                 </div>
               ) : (
                 <button
-                  onClick={() => alert(`Upgrade to ${plan.name} plan - Payment integration coming soon`)}
-                  className={`w-full py-2 rounded-lg font-semibold transition ${
-                    plan.id === 'free'
-                      ? 'bg-white/10 hover:bg-white/20 text-white'
-                      : 'bg-orange-500 hover:bg-orange-600 text-white'
-                  }`}
+                  onClick={() => handleSubscribe(plan)}
+                  disabled={loading === plan.id}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50"
                 >
-                  {plan.id === 'free' ? 'Downgrade' : 'Upgrade'}
+                  {loading === plan.id ? 'Redirecting to PayFast...' : `Upgrade to ${plan.name}`}
                 </button>
               )}
             </div>
@@ -206,7 +234,7 @@ export default function SubscriptionPage() {
 
         <div className="mt-8 bg-white/5 rounded-lg p-4 text-center">
           <p className="text-gray-400 text-sm">
-            All plans include a 14-day free trial. Cancel anytime. Pay in Rands, no hidden fees.
+            All plans include a 14-day free trial. Cancel anytime. Secure payments via PayFast. Rands only, no hidden fees.
           </p>
         </div>
       </div>
